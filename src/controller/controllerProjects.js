@@ -7,8 +7,7 @@ const uploadProject = async (req, res) => {
   try {
     const folderName = "portafolio";
     const createFolderResult = await cloudinary.api.create_folder(folderName);
-    const { urlweb, urlrepository, description } = JSON.parse(req.body.data);
-    const db = client.db("<database>");
+
     if (!createFolderResult || createFolderResult.error) {
       console.error(
         "Error al crear la carpeta en Cloudinary:",
@@ -16,24 +15,37 @@ const uploadProject = async (req, res) => {
       );
       return;
     }
-    const images = await Promise.all(
-      req.files.map(async (file) => {
-        const resultcloud = await cloudinary.v2.uploader.upload(file.path, {
-          folder: folderName,
-        });
-        return {
-          url: resultcloud.secure_url,
-          public_id: resultcloud.public_id,
-        };
-      })
-    );
+
+    const { urlweb, urlrepository, description } = JSON.parse(req.body.data);
+    const db = client.db("<database>");
+
+    const imageUploadPromises = req.files.map(async (file) => {
+      const resultcloud = await cloudinary.v2.uploader.upload(file.path, {
+        folder: folderName,
+      });
+      return {
+        url: resultcloud.secure_url,
+        public_id: resultcloud.public_id,
+      };
+    });
+
+    // Esperar a que todas las imágenes se suban antes de insertar en la base de datos
+    const images = await Promise.all(imageUploadPromises);
+
+    // Eliminar los archivos cargados de manera paralela
+    const deletePromises = req.files.map(async (file) => {
+      await fs.unlink(file.path);
+    });
+
+    await Promise.all(deletePromises);
+
     const result = await db.collection("projects").insertOne({
       urlweb,
       urlrepository,
       description,
       images,
     });
-    req.files.map(async (file) => await fs.unlink(file.path));
+
     res.status(200).json({ message: "Datos guardados correctamente" });
   } catch (error) {
     console.error("Error al guardar los datos en MongoDB:", error);
