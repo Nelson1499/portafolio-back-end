@@ -8,7 +8,7 @@ const uploadProject = async (req, res) => {
   try {
     const folderName = "portafolio";
     const createFolderResult = await cloudinary.api.create_folder(folderName);
-    const { urlweb, urlrepository, description } = JSON.parse(req.body.data);
+    const { urlweb, urlrepository, description, title } = JSON.parse(req.body.data);
     if (!createFolderResult || createFolderResult.error) {
       console.error(
         "Error al crear la carpeta en Cloudinary:",
@@ -32,6 +32,7 @@ const uploadProject = async (req, res) => {
       urlrepository,
       description,
       images,
+      title,
     });
     req.files.map(async (file) => await fs.unlink(file.path));
     res.status(200).json({ message: "Datos guardados correctamente" });
