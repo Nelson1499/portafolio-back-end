@@ -16,17 +16,17 @@ const uploadProject = async (req, res) => {
       );
       return;
     }
-    const images = await Promise.all(
-      req.files.map(async (file) => {
-        const resultcloud = await cloudinary.v2.uploader.upload(file.path, {
-          folder: folderName,
-        });
-        return {
-          url: resultcloud.secure_url,
-          public_id: resultcloud.public_id,
-        };
-      })
-    );
+    const imageUploadPromises = req.files.map(async (file) => {
+      const resultcloud = await cloudinary.v2.uploader.upload(file.path, {
+        folder: folderName,
+      });
+      return {
+        url: resultcloud.secure_url,
+        public_id: resultcloud.public_id,
+      };
+    });
+    
+    const images = await Promise.all(imageUploadPromises);
     const result = await db.collection("projects").insertOne({
       urlweb,
       urlrepository,
