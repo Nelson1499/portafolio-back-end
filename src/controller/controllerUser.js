@@ -1,13 +1,12 @@
-// import { ObjectId } from "mongodb";
 const { ObjectId } = require("mongodb");
 import { client } from "../config/database";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
+const db = client.db("users");
 const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    const db = client.db("<database>");
 
     const existingUser = await db.collection("user").findOne({ email });
 
@@ -35,7 +34,6 @@ const signup = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const db = client.db("<database>");
 
     const user = await db.collection("user").findOne({ email });
 
@@ -66,7 +64,6 @@ const login = async (req, res) => {
 const authGoogle = async (req, res) => {
   try {
     const { email, name, googleId } = req.body;
-    const db = client.db("<database>");
 
     const user = await db.collection("user").findOne({ email });
 
@@ -81,7 +78,6 @@ const authGoogle = async (req, res) => {
       });
       const user = await db.collection("user").findOne({ email });
       if (user) {
-        
         const token = jwt.sign({ userId: user._id }, "nelslo134131321");
         res.status(200).json({ userId: user._id, token });
       }
@@ -94,9 +90,7 @@ const authGoogle = async (req, res) => {
 
 const authGet = async (req, res) => {
   try {
-    const { id } = req.params; 
-    const db = client.db("<database>");
-
+    const { id } = req.params;
     const data = await db.collection("user").findOne({ _id: new ObjectId(id) });
 
     if (data) {
@@ -104,7 +98,6 @@ const authGet = async (req, res) => {
     } else {
       res.status(404).json({ message: "No se encontraron datos" });
     }
-
   } catch (error) {
     res.status(500).json({ message: "Error al obtener los datos" });
   }

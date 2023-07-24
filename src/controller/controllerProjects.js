@@ -3,6 +3,8 @@ import { client } from "../config/database";
 import { cloudinary } from "../config/cloudinary";
 import fs from "fs-extra";
 
+const db = client.db("<database>");
+
 const uploadProject = async (req, res) => {
   try {
     const folderName = "portafolio";
@@ -16,8 +18,9 @@ const uploadProject = async (req, res) => {
       return;
     }
 
-    const { urlweb, urlrepository, description } = JSON.parse(req.body.data);
-    const db = client.db("<database>");
+    const { urlweb, urlrepository, description, title } = JSON.parse(
+      req.body.data
+    );
 
     const imageUploadPromises = req.files.map(async (file) => {
       const resultcloud = await cloudinary.v2.uploader.upload(file.path, {
@@ -44,6 +47,7 @@ const uploadProject = async (req, res) => {
       urlrepository,
       description,
       images,
+      title,
     });
 
     res.status(200).json({ message: "Datos guardados correctamente" });
@@ -55,7 +59,6 @@ const uploadProject = async (req, res) => {
 
 const getProjects = async (req, res) => {
   try {
-    const db = client.db("<database>");
     const datos = await db.collection("projects").find().toArray();
 
     res.status(200).json(datos);
@@ -70,7 +73,6 @@ const getProjectspage = async (req, res) => {
     const itemsPerPage = 5;
     const skip = (page - 1) * itemsPerPage;
 
-    const db = client.db("<database>");
     const totalProjects = await db.collection("projects").countDocuments();
     const projects = await db
       .collection("projects")
@@ -95,8 +97,6 @@ const editProject = async (req, res) => {
   const { name, email, message } = req.body;
 
   try {
-    const db = client.db("<database>");
-
     const existingData = await db
       .collection("projects")
       .findOne({ _id: new ObjectId(id) });
@@ -123,7 +123,6 @@ const deleteProject = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const db = client.db("<database>");
     const project = await db
       .collection("projects")
       .findOne({ _id: new ObjectId(id) });
