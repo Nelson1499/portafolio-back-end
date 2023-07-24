@@ -31,6 +31,7 @@ router.post(
 );
 router.get("/project", Projects.getProjects);
 router.put("/project", authorizeAdmin, Projects.editProject);
-router.delete("/project", authorizeAdmin, Projects.deleteProject);
+router.delete("/project/:id", authorizeAdmin, Projects.deleteProject);
+router.get("/project/:page", Projects.getProjectspage);
 
 export default router;

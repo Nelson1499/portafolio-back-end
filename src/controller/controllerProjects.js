@@ -1,21 +1,39 @@
 import { ObjectId } from "mongodb";
-import { connectToDatabase, client } from "../config/database";
+import { client } from "../config/database";
+import { cloudinary } from "../config/cloudinary";
+import fs from "fs-extra";
 
-connectToDatabase();
 const uploadProject = async (req, res) => {
   try {
+    const folderName = "portafolio";
+    const createFolderResult = await cloudinary.api.create_folder(folderName);
     const { urlweb, urlrepository, description } = JSON.parse(req.body.data);
     const db = client.db("<database>");
-
-    const images = req.files.map((file) => `/image/${file.filename}`);
-
+    if (!createFolderResult || createFolderResult.error) {
+      console.error(
+        "Error al crear la carpeta en Cloudinary:",
+        createFolderResult.error
+      );
+      return;
+    }
+    const images = await Promise.all(
+      req.files.map(async (file) => {
+        const resultcloud = await cloudinary.v2.uploader.upload(file.path, {
+          folder: folderName,
+        });
+        return {
+          url: resultcloud.secure_url,
+          public_id: resultcloud.public_id,
+        };
+      })
+    );
     const result = await db.collection("projects").insertOne({
       urlweb,
       urlrepository,
       description,
       images,
     });
-
+    req.files.map(async (file) => await fs.unlink(file.path));
     res.status(200).json({ message: "Datos guardados correctamente" });
   } catch (error) {
     console.error("Error al guardar los datos en MongoDB:", error);
@@ -29,6 +47,31 @@ const getProjects = async (req, res) => {
     const datos = await db.collection("projects").find().toArray();
 
     res.status(200).json(datos);
+  } catch (error) {
+    console.error("Error al obtener los datos de MongoDB:", error);
+    res.status(500).json({ message: "Error al obtener los datos" });
+  }
+};
+const getProjectspage = async (req, res) => {
+  try {
+    const page = parseInt(req.params.page) || 1;
+    const itemsPerPage = 5;
+    const skip = (page - 1) * itemsPerPage;
+
+    const db = client.db("<database>");
+    const totalProjects = await db.collection("projects").countDocuments();
+    const projects = await db
+      .collection("projects")
+      .find()
+      .skip(skip)
+      .limit(itemsPerPage)
+      .toArray();
+
+    res.status(200).json({
+      projects,
+      currentPage: page,
+      totalPages: Math.ceil(totalProjects / itemsPerPage),
+    });
   } catch (error) {
     console.error("Error al obtener los datos de MongoDB:", error);
     res.status(500).json({ message: "Error al obtener los datos" });
@@ -69,6 +112,21 @@ const deleteProject = async (req, res) => {
 
   try {
     const db = client.db("<database>");
+    const project = await db
+      .collection("projects")
+      .findOne({ _id: new ObjectId(id) });
+
+    if (!project) {
+      return res.status(404).json({ message: "El dato no fue encontrado" });
+    }
+    // Eliminar las imágenes de Cloudinary
+    await Promise.all(
+      project.images.map(async (img) => {
+        await cloudinary.v2.uploader.destroy(img.public_id);
+      })
+    );
+
+    // Eliminar el proyecto de la base de datos
     const result = await db
       .collection("projects")
       .deleteOne({ _id: new ObjectId(id) });
@@ -89,4 +147,5 @@ export const Projects = {
   getProjects,
   editProject,
   deleteProject,
+  getProjectspage,
 };

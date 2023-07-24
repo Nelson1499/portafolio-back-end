@@ -1,10 +1,9 @@
 // import { ObjectId } from "mongodb";
 const { ObjectId } = require("mongodb");
-import { connectToDatabase, client } from "../config/database";
+import { client } from "../config/database";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
-connectToDatabase();
 const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;

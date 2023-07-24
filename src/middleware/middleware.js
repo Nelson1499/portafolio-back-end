@@ -8,6 +8,6 @@ export const authorizeAdmin = (req, res, next) => {
   } else {
     res
       .status(401)
-      .json({ message: "No tienes autorización para crear un proyecto" });
+      .json({ message: "No tienes autorización para crear un proyecto o eliminarlo." });
   }
 };
