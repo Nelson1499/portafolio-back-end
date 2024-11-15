@@ -11,7 +11,15 @@ const PORT = process.env.PORT || 8000;
 const app = express();
 app.use(morgan("dev"));
 app.set("port", PORT);
-app.use(cors());
+
+const corsOptions = {
+  origin: 'https://nelson1499.github.io',
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
+  optionsSuccessStatus: 204 
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json());
 connectToDatabase();
